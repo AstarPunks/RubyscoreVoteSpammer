@@ -2,11 +2,13 @@ import os, time, json, math
 from decimal import Decimal
 from dotenv import load_dotenv
 from web3 import Web3
+import random
 
 # === 設定 ===
 CONTRACT_ADDRESS = "0xb0F3b3553cE518339c1B5807A392ae904fB658Ec"
 CHAIN_ID = 1868                # Soneium mainnet（違うなら変更）
-INTERVAL_SEC = 10              # 10秒ごと
+#INTERVAL_SEC = 10              # 10秒ごと
+WINDOW_SEC = 30                   # 30秒のウィンドウごとに1回実行
 VALUE_WEI = 0                  # vote()はpayable。ETHも送りたいならweiで指定
 GAS_BUFFER = Decimal("1.20")   # estimateGasに2割マージン
 TIP_FLOOR_WEI = 100            # tipの下限（必要に応じて調整）
@@ -106,15 +108,26 @@ def send_once():
 def main():
     print(f"From: {acct.address}")
     print(f"Contract: {CONTRACT_ADDRESS}")
-    print(f"Interval: {INTERVAL_SEC}s, Value: {VALUE_WEI} wei")
+    print(f"Window: {WINDOW_SEC}s, Value: {VALUE_WEI} wei")
     try:
         while True:
+            cycle_start = time.monotonic()
+
+            # 今の30秒ウィンドウ内での実行タイミング（0〜30秒）をランダムに決める
+            offset = random.uniform(0, WINDOW_SEC)
+            print(f"this cycle will run at +{offset:.2f}s")
+            time.sleep(offset)
+
             try:
                 txh = send_once()
-                # すぐに掘られなくても次のnonceはpending基準で進む
             except Exception as e:
                 print("send error:", e)
-            time.sleep(INTERVAL_SEC)
+
+            # 残り時間を待って次の30秒ウィンドウへ
+            elapsed = time.monotonic() - cycle_start
+            remain = max(0.0, WINDOW_SEC - elapsed)
+            if remain > 0:
+                time.sleep(remain)
     except KeyboardInterrupt:
         print("stopped.")
 
