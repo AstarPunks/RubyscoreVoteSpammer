@@ -1,4 +1,4 @@
-# RubyscoreVoteSpamer
+# RubyscoreVoteSpammer
 
 ## Pythonの仮想環境の構築
 
